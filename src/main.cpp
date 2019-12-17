@@ -2,6 +2,7 @@
 #include <opencv2/opencv.hpp>
 #include <Eigen/Dense>
 #include "utility.h"
+#include <map>
 
 using namespace Eigen;
 constexpr int ET = 1;
@@ -11,6 +12,12 @@ using Point = Eigen::Vector3d;
 
 
 cv::Mat ViewGenerate(Eigen::Vector3d U, Eigen::Vector3d F, double alpha, double beta, int M, int N);
+std::map<PlaneIndex, cv::Mat> images;
+
+cv::Vec3b f()
+{
+	return images.find(PlaneIndex::UP)->second.at<cv::Vec3b>(10, 10);
+}
 int main()
 {
 	
@@ -23,10 +30,32 @@ int main()
 	WhichPlane(P, intersect_point);
 	cout << intersect_point.transpose() << endl;*/
 	
+	// 读取图片
+	cv::Mat image_up = cv::imread("F:\\homework\\parallel computing\\FinallyHomework\\Code\\data\\up.jpg");
+	cv::Mat image_bottom = cv::imread("F:\\homework\\parallel computing\\FinallyHomework\\Code\\data\\bottom.jpg");
+	cv::Mat image_front = cv::imread("F:\\homework\\parallel computing\\FinallyHomework\\Code\\data\\front.jpg");
+	cv::Mat image_back = cv::imread("F:\\homework\\parallel computing\\FinallyHomework\\Code\\data\\back.jpg");
+	cv::Mat image_left = cv::imread("F:\\homework\\parallel computing\\FinallyHomework\\Code\\data\\left.jpg");
+	cv::Mat image_right = cv::imread("F:\\homework\\parallel computing\\FinallyHomework\\Code\\data\\right.jpg");
 
-	cv::Mat image_up = cv::imread("./data/up.jpg");
-	cv::imshow("up", image_up);
+	
+	images[PlaneIndex::UP] = image_up;
+	images[PlaneIndex::BOTTOM] = image_bottom;
+	images[PlaneIndex::FRONT] = image_front;
+	images[PlaneIndex::BACK] = image_back;
+	images[PlaneIndex::LEFT] = image_left;
+	images[PlaneIndex::RIGHT] = image_right;
+
+	
+	//cout << v << endl;
+
+	auto img = ViewGenerate(U, F, 45 * PI / 180.0, 30 * PI / 180.0, 800, 800);
+	img.resize(600);
+	cv::resize(img, img, cv::Size(600, 600));
+	cv::imshow("result", img);
 	cv::waitKey();
+	
+
 
 	
 #ifdef _WIN32
@@ -42,7 +71,7 @@ cv::Mat ViewGenerate(Eigen::Vector3d U, Eigen::Vector3d F, double alpha, double 
 	
 	
 	Point T = F / F.norm()*ET;
-	//cout << "T:" << T.transpose() << endl;
+	cout << "T:" << endl << T << endl;
 
 	// 垂直于平面ETU的法向量
 	auto VTQ = F.cross(U);
@@ -55,16 +84,19 @@ cv::Mat ViewGenerate(Eigen::Vector3d U, Eigen::Vector3d F, double alpha, double 
 
 	// 计算S坐标
 	Point S = T + H / 2 * U.normalized();
-	//cout << "S:" << S.transpose() << endl;
+	cout << "S:" << endl << S << endl;
 
 	// 计算Q点坐标
 	Point Q = T + W / 2 * VTQ.normalized();
-	//cout << "Q:" << Q.transpose() << endl;
+	cout << "Q:" << endl << Q << endl;
 
 	// 计算A点坐标
 
 	Point A = T - W / 2 * VTQ.normalized() + H / 2 * U.normalized();
-	//cout << "A:" << A.transpose() << endl;
+	cout << "A:" << endl << A << endl;
+
+	cv::Mat img(M, N, CV_8UC3);
+	assert(img.channels() == 3);
 
 	// 平面ABCD上任意一点的坐标 P(i,j)
 	for (int i = 0; i < M; i++)
@@ -73,14 +105,11 @@ cv::Mat ViewGenerate(Eigen::Vector3d U, Eigen::Vector3d F, double alpha, double 
 		{
 			Point Pij = A - pix_dh / 2 * U.normalized() + pix_hw / 2 * VTQ.normalized() -
 				i * pix_dh*U.normalized() + j * pix_hw*VTQ.normalized();
-
-			if (i == 0 && j == 0)
-			{
-				//cout << "Pij:" << Pij.transpose() << endl;
-			}
+			auto c = GetPixel(images, Pij, M, N);
+			img.at<cv::Vec3b>(i, j) = c;
 		}
 	}
 	
 
-	return cv::Mat{};
+	return img;
 }
