@@ -1,0 +1,14 @@
+*.sin
+*.vs
+*.vcxproj
+*.user
+*.filters
+*.sln
+
+
+
+
+Debug/
+Release/
+x64/
+build/
