@@ -1,27 +1,27 @@
 ﻿#include <iostream>
 #include <opencv2/opencv.hpp>
-#include <Eigen/Dense>
 #include "utility.h"
 #include <map>
 
-using namespace Eigen;
 constexpr int ET = 1;
 constexpr double PI = 3.1415926;
 using namespace std;
-using Point = Eigen::Vector3d;
+using Point = Vector3d;
 
-
-cv::Mat ViewGenerate(Eigen::Vector3d U, Eigen::Vector3d F, double alpha, double beta, int M, int N);
+cv::Mat ViewGenerate(Vector3d U, Vector3d F, double alpha, double beta, int M, int N);
 std::map<PlaneIndex, cv::Mat> images;
 
-cv::Vec3b f()
+float scale(int i, int n)
 {
-	return images.find(PlaneIndex::UP)->second.at<cv::Vec3b>(10, 10);
+	return ((float)i) / (n - 1);
 }
+
+
+
 int main()
 {
-	Eigen::Vector3d U{ 0,0,1 };
-	Eigen::Vector3d F{ 1,1,0 };
+	Vector3d U( 0,0,1 );
+	Vector3d F( 1,0,0 );
 
 	
 	// 读取图片
@@ -40,9 +40,7 @@ int main()
 	images[PlaneIndex::LEFT] = image_left;
 	images[PlaneIndex::RIGHT] = image_right;
 
-
-
-	auto img = ViewGenerate(U, F, 30 * PI / 180.0, 40 * PI / 180.0, 768, 1024);// 输入角度和分辨率大小有关系 会导致bug
+	auto img = ViewGenerate(U, F, 60 * PI / 180.0, 60 * PI / 180.0, 1024, 1024);
 	cv::imshow("result", img);
 	cv::waitKey();
 	
@@ -56,13 +54,11 @@ int main()
 }
 
 
-cv::Mat ViewGenerate(Eigen::Vector3d U, Eigen::Vector3d F, double alpha, double beta, int M, int N)
+cv::Mat ViewGenerate(Vector3d U, Vector3d F, double alpha, double beta, int M, int N)
 {
 	// 计算 T 点坐标
-	
-	
 	Point T = F.normalized()*ET;
-	cout << "T:" << endl << T << endl;
+	//cout << "T:" << endl << T << endl;
 
 	// 垂直于平面ETU的法向量
 	auto VTQ = F.cross(U);
@@ -73,18 +69,11 @@ cv::Mat ViewGenerate(Eigen::Vector3d U, Eigen::Vector3d F, double alpha, double 
 	double pix_dh = H / M;
 	double pix_hw = W / N;
 
-	// 计算S坐标
-	Point S = T + H / 2 * U.normalized();
-	cout << "S:" << endl << S << endl;
-
-	// 计算Q点坐标
-	Point Q = T + W / 2 * VTQ.normalized();
-	cout << "Q:" << endl << Q << endl;
+	
 
 	// 计算A点坐标
-
 	Point A = T - W / 2 * VTQ.normalized() + H / 2 * U.normalized();
-	cout << "A:" << endl << A << endl;
+	//cout << "A:" << endl << A << endl;
 
 	cv::Mat img(M, N, CV_8UC3);
 	assert(img.channels() == 3);
@@ -94,15 +83,10 @@ cv::Mat ViewGenerate(Eigen::Vector3d U, Eigen::Vector3d F, double alpha, double 
 	{
 		for (int j = 0; j < N; j++)
 		{
-			
 			Point Pij = A - pix_dh / 2 * U.normalized() + pix_hw / 2 * VTQ.normalized() -
 				i * pix_dh*U.normalized() + j * pix_hw*VTQ.normalized();
-
 			auto c = GetPixel(images, Pij);
 			img.at<cv::Vec3b>(i, j) = c;
-
-			
-			
 		}
 	}
 	

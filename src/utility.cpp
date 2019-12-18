@@ -3,7 +3,27 @@
 // 正方体边长的一半
 const double HALF_SIDE = 0.5;
 
-PlaneIndex WhichPlane(Eigen::Vector3d pt, Eigen::Vector3d &intersect_point)
+Vector3d operator*(const Vector3d v, float d)
+{
+	return Vector3d{ v._x*d, v._y*d, v._z*d };
+}
+
+Vector3d operator*(float d, const Vector3d v)
+{
+	return v * d;
+}
+
+Vector3d operator-(const Vector3d v1, const Vector3d v2)
+{
+	return Vector3d{ v1._x - v2._x, v1._y - v2._y, v1._z - v2._z };
+}
+
+Vector3d operator+(const Vector3d v1, const Vector3d v2)
+{
+	return Vector3d{ v1._x + v2._x, v1._y + v2._y, v1._z + v2._z };
+}
+
+PlaneIndex WhichPlane(Vector3d pt, Vector3d &intersect_point)
 {
 	auto nor = pt.normalized();
 
@@ -21,7 +41,7 @@ PlaneIndex WhichPlane(Eigen::Vector3d pt, Eigen::Vector3d &intersect_point)
 #ifdef _DEBUG
 			//std::cout << "上" << std::endl;
 #endif
-			intersect_point = Eigen::Vector3d{ x,y,HALF_SIDE };
+			intersect_point = Vector3d( x,y,HALF_SIDE );
 			return PlaneIndex::UP;
 		}
 
@@ -42,7 +62,7 @@ PlaneIndex WhichPlane(Eigen::Vector3d pt, Eigen::Vector3d &intersect_point)
 #ifdef _DEBUG
 			//std::cout << "下" << std::endl;
 #endif
-			intersect_point = Eigen::Vector3d{ x,y,-HALF_SIDE };
+			intersect_point = Vector3d( x,y,-HALF_SIDE );
 			return PlaneIndex::BOTTOM;
 		}
 
@@ -63,7 +83,7 @@ PlaneIndex WhichPlane(Eigen::Vector3d pt, Eigen::Vector3d &intersect_point)
 #ifdef _DEBUG
 			//std::cout << "前" << std::endl;
 #endif
-			intersect_point = Eigen::Vector3d{ HALF_SIDE,y,z };
+			intersect_point = Vector3d( HALF_SIDE,y,z );
 			return PlaneIndex::FRONT;
 		}
 
@@ -84,7 +104,7 @@ PlaneIndex WhichPlane(Eigen::Vector3d pt, Eigen::Vector3d &intersect_point)
 #ifdef _DEBUG
 			//std::cout << "后" << std::endl;
 #endif
-			intersect_point = Eigen::Vector3d{ -HALF_SIDE,y,z };
+			intersect_point = Vector3d( -HALF_SIDE,y,z );
 			return PlaneIndex::BACK;
 		}
 
@@ -105,7 +125,7 @@ PlaneIndex WhichPlane(Eigen::Vector3d pt, Eigen::Vector3d &intersect_point)
 #ifdef _DEBUG
 			//std::cout << "左" << std::endl;
 #endif
-			intersect_point = Eigen::Vector3d{ x,-HALF_SIDE,z };
+			intersect_point = Vector3d( x,-HALF_SIDE,z );
 			return PlaneIndex::LEFT;
 		}
 
@@ -126,7 +146,7 @@ PlaneIndex WhichPlane(Eigen::Vector3d pt, Eigen::Vector3d &intersect_point)
 #ifdef _DEBUG
 			//std::cout << "右" << std::endl;
 #endif
-			intersect_point = Eigen::Vector3d{ x,HALF_SIDE,z };
+			intersect_point = Vector3d( x,HALF_SIDE,z );
 			return PlaneIndex::RIGHT;
 		}
 
@@ -137,10 +157,10 @@ PlaneIndex WhichPlane(Eigen::Vector3d pt, Eigen::Vector3d &intersect_point)
 	return PlaneIndex::NONE;
 }
 
-const cv::Vec3b GetPixel(const std::map<PlaneIndex, cv::Mat> &images, Eigen::Vector3d pt)
+const cv::Vec3b GetPixel(const std::map<PlaneIndex, cv::Mat> &images, Vector3d pt)
 {
 	// 交点
-	Eigen::Vector3d intersect_point;
+	Vector3d intersect_point;
 
 	int M = images.find(PlaneIndex::UP)->second.rows;
 	int N = images.find(PlaneIndex::UP)->second.cols;
@@ -167,7 +187,7 @@ const cv::Vec3b GetPixel(const std::map<PlaneIndex, cv::Mat> &images, Eigen::Vec
 		return images.find(PlaneIndex::BOTTOM)->second.at<cv::Vec3b>(i, j);
 		break;
 
-	case PlaneIndex::LEFT:
+	case PlaneIndex::LEFT: 
 		i = (HALF_SIDE - intersect_point(2))*M;
 		j = (HALF_SIDE + intersect_point(0))*N;
 		if (i >= M)i = M - 1;
