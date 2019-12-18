@@ -15,7 +15,7 @@ enum class PlaneIndex{ UP, BOTTOM, LEFT, RIGHT, FRONT, BACK,NONE };
 PlaneIndex WhichPlane(Eigen::Vector3d pt, Eigen::Vector3d &intersect_point);
 
 // 获取穿过正方体的像素颜色
-const cv::Vec3b GetPixel(const std::map<PlaneIndex, cv::Mat> &images, Eigen::Vector3d pt, int M, int N);
+const cv::Vec3b GetPixel(const std::map<PlaneIndex, cv::Mat> &images, Eigen::Vector3d pt);
 
 
 #endif//__UTILITY_H__

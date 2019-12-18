@@ -20,15 +20,9 @@ cv::Vec3b f()
 }
 int main()
 {
-	
 	Eigen::Vector3d U{ 0,0,1 };
-	Eigen::Vector3d F{ 0,1,0 };
-	//ViewGenerate(U, F, 45 * PI / 180, 45 * PI / 180, 100, 100);
+	Eigen::Vector3d F{ 1,1,0 };
 
-	/*Eigen::Vector3d intersect_point;
-	Eigen::Vector3d P{ 0,0.6,0.49 };
-	WhichPlane(P, intersect_point);
-	cout << intersect_point.transpose() << endl;*/
 	
 	// 读取图片
 	cv::Mat image_up = cv::imread("F:\\homework\\parallel computing\\FinallyHomework\\Code\\data\\up.jpg");
@@ -46,12 +40,9 @@ int main()
 	images[PlaneIndex::LEFT] = image_left;
 	images[PlaneIndex::RIGHT] = image_right;
 
-	
-	//cout << v << endl;
 
-	auto img = ViewGenerate(U, F, 45 * PI / 180.0, 30 * PI / 180.0, 800, 800);
-	img.resize(600);
-	cv::resize(img, img, cv::Size(600, 600));
+
+	auto img = ViewGenerate(U, F, 30 * PI / 180.0, 40 * PI / 180.0, 768, 1024);// 输入角度和分辨率大小有关系 会导致bug
 	cv::imshow("result", img);
 	cv::waitKey();
 	
@@ -70,7 +61,7 @@ cv::Mat ViewGenerate(Eigen::Vector3d U, Eigen::Vector3d F, double alpha, double 
 	// 计算 T 点坐标
 	
 	
-	Point T = F / F.norm()*ET;
+	Point T = F.normalized()*ET;
 	cout << "T:" << endl << T << endl;
 
 	// 垂直于平面ETU的法向量
@@ -103,10 +94,15 @@ cv::Mat ViewGenerate(Eigen::Vector3d U, Eigen::Vector3d F, double alpha, double 
 	{
 		for (int j = 0; j < N; j++)
 		{
+			
 			Point Pij = A - pix_dh / 2 * U.normalized() + pix_hw / 2 * VTQ.normalized() -
 				i * pix_dh*U.normalized() + j * pix_hw*VTQ.normalized();
-			auto c = GetPixel(images, Pij, M, N);
+
+			auto c = GetPixel(images, Pij);
 			img.at<cv::Vec3b>(i, j) = c;
+
+			
+			
 		}
 	}
 	
