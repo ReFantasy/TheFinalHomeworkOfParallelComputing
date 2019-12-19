@@ -563,8 +563,22 @@ void GraphGenerate(const std::map<int, cv::Mat> &images_cpu, Vector3d U_cpu, Vec
 	const int bx = (M + TX - 1) / TX;
 	const int by = (N + TY - 1) / TY;
 	const dim3 gridSize = dim3(bx, by);
+
+	// 计时开始
+	cudaEvent_t start_gpu = 0, stop_gpu = 0;
+	cudaEventCreate(&start_gpu);
+	cudaEventCreate(&stop_gpu);
+	cudaEventRecord(start_gpu);
+
 	ComputePixelValue << <gridSize, blockSize >> > (A_GPU, U_GPU, pix_dh, pix_hw, VTQ_GPU, images_gpu, result_gpu);
 	cudaDeviceSynchronize();
+
+	// 计时结束
+	cudaEventRecord(stop_gpu);
+	cudaEventSynchronize(stop_gpu);
+	float time_matrix_add_gpu = 0;
+	cudaEventElapsedTime(&time_matrix_add_gpu, start_gpu, stop_gpu);
+	std::cout << "consumed time: " << time_matrix_add_gpu << " ms" << std::endl;
 
 	result_cpu = cv::Mat(M, N, CV_8UC3);
 	for (int i = 0; i < M; i++)
