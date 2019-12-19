@@ -1,3 +1,8 @@
+/*
+ *
+ *  This file contains some generic functions and classes
+ *
+ */
 #ifndef __UTILITY_H__
 #define __UTILITY_H__
 #include <iostream>
@@ -7,34 +12,35 @@
 
 enum class PlaneIndex{ UP, BOTTOM, LEFT, RIGHT, FRONT, BACK,NONE };
 
+/*
+ *
+ *  A class to represents a three-dimensional vector.
+ *  This class defines some basic operations, 
+ *  such as vector addition, subtraction, multiplication and division, and modular operations.
+ *  Of course, you can use open source libraries such as EIGEN instead. But then you can not
+ *  modify this program to adapt to CUDA.
+ */
 class Vector3d
 {
 	friend Vector3d operator*(const Vector3d v, float d);
 	friend Vector3d operator*(float d, const Vector3d v);
 	friend Vector3d operator-(const Vector3d v1, const Vector3d v2);
 	friend Vector3d operator+(const Vector3d v1, const Vector3d v2);
+
 public:
 	Vector3d() = default;
 	Vector3d(float x, float y, float z) :_x(x), _y(y), _z(z) {}
+
+	// Get the unit vector
 	Vector3d normalized()const
 	{
 		float _mul = mul();
 		return Vector3d{ _x / _mul, _y / _mul,_z / _mul };
 	}
+
+	// Vector cross-product
 	Vector3d cross(const Vector3d u)
 	{
-		/*auto i = Vector3d(1, 0, 0);
-		auto j = Vector3d(0, 1, 0);
-		auto k = Vector3d(0, 0, 1);
-		float a1 = _x;
-		float b1 = _y;
-		float c1 = _z;
-		float a2 = u._x;
-		float b2 = u._y;
-		float c2 = u._z;
-
-		return (b1*c2 - b2 * c1)*i + (a2*c1 - a1 * c2)*j + (a1*b2 - a2 * b1)*k;*/
-
 		float a1 = _x;
 		float b1 = _y;
 		float c1 = _z;
@@ -58,6 +64,7 @@ public:
 		else
 			return 0;
 	}
+
 private:
 	float mul()const
 	{
@@ -71,20 +78,22 @@ private:
 };
 
 Vector3d operator*(const Vector3d v, float d);
-
 Vector3d operator*(float d, const Vector3d v);
-
 Vector3d operator-(const Vector3d v1, const Vector3d v2);
 Vector3d operator+(const Vector3d v1, const Vector3d v2);
 
-/*
- * �ж����� OP ���������ཻ��ƽ��
- * 
+/** \brief Determine which surface of the cube the line between point pt and origin go through
+ *  \param[in] pt Pixel point coordinates
+ *  \param[out] intersect_point 
+ *  \return plane index
  */
-
 PlaneIndex WhichPlane(Vector3d pt, Vector3d &intersect_point);
 
-// ��ȡ������������������ɫ
+/** \brief Calculate the pixel value corresponding to point pt
+ *  \param[in] images Cube surface image
+ *  \param[in] pt The coordinates of point
+ *  \return Pixel values
+ */
 const cv::Vec3b GetPixel(const std::map<PlaneIndex, cv::Mat> &images, Vector3d pt);
 
 

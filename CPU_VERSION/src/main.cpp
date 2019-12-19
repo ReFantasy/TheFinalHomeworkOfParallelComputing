@@ -1,15 +1,31 @@
+/*
+ *
+ *  main program
+ *
+ */
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include "utility.h"
 #include <map>
+#include <chrono>
 
 constexpr int ET = 1;
 constexpr double PI = 3.141592653;
 
 using namespace std;
+using namespace std::chrono;
 using Point = Vector3d;
 
-
+/** \brief Generate graph to specific view
+ *  \param[in] images Contains the resource image of the cube's six faces
+ *  \param[in] U Specifies the upward direction of the field of view, perpendicularing to the F
+ *  \param[in] F Specifies the forward direction of the field of view, perpendicularing to the U
+ *  \param[in] alpha Half Angle of vertical field of view, alpha<90
+ *  \param[in] beta Half Angle of horizontal field of view, beta<90
+ *  \param[in] M The height of the return graph, the recommendation is proportional to the field of view
+ *  \param[in] N The width of the return graph, the recommendation is proportional to the field of view
+ *  \return the graph to the view
+ */
 cv::Mat GraphGenerate(const std::map<PlaneIndex, cv::Mat> &images, Vector3d U, Vector3d F, double alpha, double beta, int M, int N);
 
 int main()
@@ -30,16 +46,26 @@ int main()
 	images[PlaneIndex::LEFT] = image_left;
 	images[PlaneIndex::RIGHT] = image_right;
 
+	// Set view direction
 	Vector3d U(0, 0, 1);
 	Vector3d F(1, 0, 0);
 
+	auto start_time = high_resolution_clock::now();
+
+	// Compute the graph of the specific view
 	auto img = GraphGenerate(images, U, F, 60 * PI / 180.0, 60 * PI / 180.0, 1024, 1024);
+
+
+	auto end_time = high_resolution_clock::now();
+
+	std::cout << "consumed time : " << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() << " ms" << std::endl;
+
+	// show results
 	cv::imshow("result", img);
 	cv::waitKey();
 	
 
 
-	
 #ifdef _WIN32
 	system("pause");
 #endif
@@ -49,40 +75,43 @@ int main()
 
 cv::Mat GraphGenerate(const std::map<PlaneIndex, cv::Mat> &images, Vector3d U, Vector3d F, double alpha, double beta, int M, int N)
 {
-	// 计算 T 点坐标
 	Point T = F.normalized()*ET;
 	//cout << "T:" << endl << T << endl;
 
-	// 垂直于平面ETU的法向量
+	// the normal vector to the plane which is consist of vector F and vector U
 	auto VTQ = F.cross(U);
 
-	// 图像宽和高
+	// the width and height of the view
 	double H = 2 * ET*std::tan(alpha);
 	double W = 2 * ET*std::tan(beta);
 	double pix_dh = H / M;
 	double pix_hw = W / N;
 
 	
-
-	// 计算A点坐标
 	Point A = T - W / 2 * VTQ.normalized() + H / 2 * U.normalized();
 	//cout << "A:" << endl << A << endl;
 
-	cv::Mat img(M, N, CV_8UC3);
-	assert(img.channels() == 3);
+	cv::Mat result_graph(M, N, CV_8UC3);
+	assert(result_graph.channels() == 3);  // must be RGB image 
 
-	// 平面ABCD上任意一点的坐标 P(i,j)
+	/*
+	 *  the coordinates of any point to the plane ABCD.
+	 *  we can get any pixel's size according to M and N,
+	 *  and then we go through all the pixels from point A.
+	 *  we can get pixel's coordinates according to : A + pixel_index * pixel_size
+	 */
 	for (int i = 0; i < M; i++)
 	{
 		for (int j = 0; j < N; j++)
 		{
-			Point Pij = A - pix_dh / 2 * U.normalized() + pix_hw / 2 * VTQ.normalized() -
+			Point p_i_j = A - pix_dh / 2 * U.normalized() + pix_hw / 2 * VTQ.normalized() -
 				i * pix_dh*U.normalized() + j * pix_hw*VTQ.normalized();
-			auto c = GetPixel(images, Pij);
-			img.at<cv::Vec3b>(i, j) = c;
+
+			auto pixel_value = GetPixel(images, p_i_j);
+			result_graph.at<cv::Vec3b>(i, j) = pixel_value;
 		}
 	}
 	
 
-	return img;
+	return result_graph;
 }
