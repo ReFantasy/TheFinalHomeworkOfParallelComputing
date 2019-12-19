@@ -4,27 +4,17 @@
 #include <map>
 
 constexpr int ET = 1;
-constexpr double PI = 3.1415926;
+constexpr double PI = 3.141592653;
+
 using namespace std;
 using Point = Vector3d;
 
-cv::Mat ViewGenerate(Vector3d U, Vector3d F, double alpha, double beta, int M, int N);
-std::map<PlaneIndex, cv::Mat> images;
 
-float scale(int i, int n)
-{
-	return ((float)i) / (n - 1);
-}
-
-
+cv::Mat GraphGenerate(const std::map<PlaneIndex, cv::Mat> &images, Vector3d U, Vector3d F, double alpha, double beta, int M, int N);
 
 int main()
 {
-	Vector3d U( 0,0,1 );
-	Vector3d F( 1,0,0 );
-
-	
-	// 读取图片
+	// Read the resource file
 	cv::Mat image_up = cv::imread("../data/up.jpg");
 	cv::Mat image_bottom = cv::imread("../data/bottom.jpg");
 	cv::Mat image_front = cv::imread("../data/front.jpg");
@@ -32,7 +22,7 @@ int main()
 	cv::Mat image_left = cv::imread("../data/left.jpg");
 	cv::Mat image_right = cv::imread("../data/right.jpg");
 
-	
+	std::map<PlaneIndex, cv::Mat> images;
 	images[PlaneIndex::UP] = image_up;
 	images[PlaneIndex::BOTTOM] = image_bottom;
 	images[PlaneIndex::FRONT] = image_front;
@@ -40,7 +30,10 @@ int main()
 	images[PlaneIndex::LEFT] = image_left;
 	images[PlaneIndex::RIGHT] = image_right;
 
-	auto img = ViewGenerate(U, F, 60 * PI / 180.0, 60 * PI / 180.0, 1024, 1024);
+	Vector3d U(0, 0, 1);
+	Vector3d F(1, 0, 0);
+
+	auto img = GraphGenerate(images, U, F, 60 * PI / 180.0, 60 * PI / 180.0, 1024, 1024);
 	cv::imshow("result", img);
 	cv::waitKey();
 	
@@ -54,7 +47,7 @@ int main()
 }
 
 
-cv::Mat ViewGenerate(Vector3d U, Vector3d F, double alpha, double beta, int M, int N)
+cv::Mat GraphGenerate(const std::map<PlaneIndex, cv::Mat> &images, Vector3d U, Vector3d F, double alpha, double beta, int M, int N)
 {
 	// 计算 T 点坐标
 	Point T = F.normalized()*ET;
