@@ -52,8 +52,11 @@ int main()
 
 	auto start_time = high_resolution_clock::now();
 
-	// Compute the graph of the specific view
-	auto img = GraphGenerate(images, U, F, 60 * PI / 180.0, 60 * PI / 180.0, 1024, 1024);
+	/*
+	 * Compute the graph of the specific view.
+	 * Parameters three and four are in degrees, not radians.
+	 */
+	auto img = GraphGenerate(images, U, F, 60 , 60 , 1024, 1024);
 
 
 	auto end_time = high_resolution_clock::now();
@@ -82,8 +85,8 @@ cv::Mat GraphGenerate(const std::map<PlaneIndex, cv::Mat> &images, Vector3d U, V
 	auto VTQ = F.cross(U);
 
 	// the width and height of the view
-	double H = 2 * ET*std::tan(alpha);
-	double W = 2 * ET*std::tan(beta);
+	double H = 2 * ET*std::tan(alpha * PI / 180.0);
+	double W = 2 * ET*std::tan(beta * PI / 180.0);
 	double pix_dh = H / M;
 	double pix_hw = W / N;
 
