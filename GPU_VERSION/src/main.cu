@@ -8,7 +8,7 @@ constexpr int ET = 1;
 constexpr double PI = 3.1415926;
 using namespace std;
 
-#define TX 32
+#define TX 16
 #define TY 32
 
 // 正方体表面索引编号
@@ -614,7 +614,7 @@ int main()
 	Vector3d U;
 	SetVector3d(&U, 0, 0, 1);
 	Vector3d F;
-	SetVector3d(&F, 1, 1, 0);
+	SetVector3d(&F, 1, 0, 0);
 
 	// 读取图片
 	cv::Mat image_up = cv::imread("../data/up.jpg");
@@ -637,7 +637,7 @@ int main()
 	/*
 	 *  参数三和参数四角度的单位 为 度(°)，而非弧度
 	 */
-	GraphGenerate(imgs, U, F, 30 , 40 , 768, 1024, result);
+	GraphGenerate(imgs, U, F, 60 , 60 , 1024, 1024, result);
 	cudaDeviceSynchronize();
 
 	cv::imshow("result", result);

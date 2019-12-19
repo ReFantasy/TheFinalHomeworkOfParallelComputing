@@ -47,8 +47,8 @@ int main()
 	images[PlaneIndex::RIGHT] = image_right;
 
 	// Set view direction
-	Vector3d U(0, 0, 1);
-	Vector3d F(1, 0, 0);
+	Vector3d U(-1, -1, 2);
+	Vector3d F(1, 1, 1);
 
 	auto start_time = high_resolution_clock::now();
 
@@ -56,7 +56,7 @@ int main()
 	 * Compute the graph of the specific view.
 	 * Parameters three and four are in degrees, not radians.
 	 */
-	auto img = GraphGenerate(images, U, F, 60 , 60 , 1024, 1024);
+	auto img = GraphGenerate(images, U, F, 45 , 45 , 1024, 1024);
 
 
 	auto end_time = high_resolution_clock::now();
