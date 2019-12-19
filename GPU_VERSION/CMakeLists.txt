@@ -1,6 +1,9 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 PROJECT(ViewGeneration)
 
+# 可执行文件输出目录
+SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+
 #字符集
 Add_Definitions(-DUNICODE -D_UNICODE)
 
@@ -26,6 +29,10 @@ SET(CMAKE_BUILD_TYPE "Release")
 
 #添加子目录
 ADD_SUBDIRECTORY(src)
+
+# 拷贝资源图片到指定位置
+file(COPY ./data DESTINATION ${EXECUTABLE_OUTPUT_PATH})
+file(COPY ./data DESTINATION ${PROJECT_BINARY_DIR})
 
 
 

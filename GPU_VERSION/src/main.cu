@@ -572,12 +572,15 @@ int main()
 	SetVector3d(&F, 1, 1, 0);
 
 	// 读取图片
-	cv::Mat image_up = cv::imread("F:\\homework\\parallel computing\\FinallyHomework\\Code\\data\\up.jpg");
-	cv::Mat image_bottom = cv::imread("F:\\homework\\parallel computing\\FinallyHomework\\Code\\data\\bottom.jpg");
-	cv::Mat image_front = cv::imread("F:\\homework\\parallel computing\\FinallyHomework\\Code\\data\\front.jpg");
-	cv::Mat image_back = cv::imread("F:\\homework\\parallel computing\\FinallyHomework\\Code\\data\\back.jpg");
-	cv::Mat image_left = cv::imread("F:\\homework\\parallel computing\\FinallyHomework\\Code\\data\\left.jpg");
-	cv::Mat image_right = cv::imread("F:\\homework\\parallel computing\\FinallyHomework\\Code\\data\\right.jpg");
+	// 读取图片
+	cv::Mat image_up = cv::imread("../data/up.jpg");
+	cv::Mat image_bottom = cv::imread("../data/bottom.jpg");
+	cv::Mat image_front = cv::imread("../data/front.jpg");
+	cv::Mat image_back = cv::imread("../data/back.jpg");
+	cv::Mat image_left = cv::imread("../data/left.jpg");
+	cv::Mat image_right = cv::imread("../data/right.jpg");
+
+	
 	std::map<int, cv::Mat> imgs;
 	imgs[UP] = image_up;
 	imgs[BOTTOM] = image_bottom;
