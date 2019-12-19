@@ -2,9 +2,7 @@
 #include <opencv2/opencv.hpp>
 #include "device_launch_parameters.h"
 #include "cuda_runtime.h"
-#include "utility.h"
 #include <map>
-
 
 constexpr int ET = 1;
 constexpr double PI = 3.1415926;
@@ -13,6 +11,7 @@ using namespace std;
 #define TX 32
 #define TY 32
 
+// 正方体表面索引编号
 #define UP 0
 #define BOTTOM 1
 #define LEFT 2
@@ -21,7 +20,9 @@ using namespace std;
 #define BACK 5
 
 /****************************************************************************************************
- *  定义相关数据结构
+ *
+ *  辅助数据结构
+ *
  ***************************************************************************************************/
 
 /*
@@ -95,8 +96,8 @@ struct Vector3d
 using Point = Vector3d;
 
 // 正方体边长的一半
-//const double HALF_SIDE = 0.5;
 #define HALF_SIDE (0.5)
+
 __host__ __device__
 void Print(Vector3d v)
 {
@@ -199,7 +200,7 @@ Vector3d Add(const Vector3d *pv1, const Vector3d *pv2)
 
 
 /*
- *   自定义图像类
+ *   自定义图像类以适配CUDA
  */
 struct GImage
 {
@@ -208,12 +209,18 @@ struct GImage
 	Vector3d *data;
 };
 
+/*
+ *  获取图像指定位置的像素值
+ */
 __host__ __device__
 Vector3d GPixel(const GImage *pimg, int row, int col)
 {
 	return pimg->data[col + row * pimg->cols];
 }
 
+/*
+ *  设置图像指定位置的像素值
+ */
 __host__ __device__
 void SetGPixel(GImage *pimg, int row, int col, Vector3d new_pixel)
 {
@@ -221,23 +228,30 @@ void SetGPixel(GImage *pimg, int row, int col, Vector3d new_pixel)
 }
 
 /****************************************************************************************************
- *  process
+ *
+ *  主流程相关函数
+ *
  ***************************************************************************************************/
+
+/*
+ *  计算指定坐标点 pt 与正方体哪个面相交，并计算相交的坐标位置，保存于参数 intersect_point 内
+ */
 __device__
 int WhichPlane(Vector3d pt, Vector3d &intersect_point)
 {
+	// 同方向的单位向量
 	auto nor = Normalized(&pt);
 
-	// "上"
-	if (Index(&nor, 2) > 0)
+	// 判断 pt 是否与上面相交
+	if (Index(&nor, 2) > 0)  // 若相交则 z 坐标必定大于 0
 	{
-		double scale = HALF_SIDE / std::abs(Index(&nor, 2));
+		double scale = HALF_SIDE / std::abs(Index(&nor, 2)); // 将单位方向向量 z 坐标缩放到与正方体上面相交的长度，并保存作坊比例
 		double x, y;
-		x = Index(&nor, 0)*scale;
-		y = Index(&nor, 1)*scale;
+		x = Index(&nor, 0)*scale;  // 计算缩放后的 x 坐标
+		y = Index(&nor, 1)*scale;  // 计算缩放后的 y 坐标
 
 
-		if (std::abs(x) <= HALF_SIDE && std::abs(y) <= HALF_SIDE)
+		if (std::abs(x) <= HALF_SIDE && std::abs(y) <= HALF_SIDE)  // 若相交，则 x,y 坐标必定在上面的矩形区域内
 		{
 #ifdef _DEBUG
 			//std::cout << "上" << std::endl;
@@ -249,6 +263,10 @@ int WhichPlane(Vector3d pt, Vector3d &intersect_point)
 
 
 	}
+
+	/*
+	 *    其他面的判断方式和上面类似
+	 */
 
 	// "下"
 	if (Index(&nor, 2) < 0)
@@ -360,11 +378,13 @@ int WhichPlane(Vector3d pt, Vector3d &intersect_point)
 
 	}
 
-
 	return -1;
 }
 
 
+/*
+ *  计算由坐标系原点出发，经过指定坐标 pt 发出的射线与正方体其中一个面相交的位置处的图像像素值
+ */
 __device__
 const Vector3d GetPixel(const GImage images[], Vector3d pt)
 {
@@ -374,18 +394,28 @@ const Vector3d GetPixel(const GImage images[], Vector3d pt)
 	int M = images[UP].rows;
 	int N = images[UP].cols;
 
-	// 相交的平面
-	int plane = WhichPlane(pt, intersect_point);
-	int i = 0, j = 0;
+	// 计算相交的平面索引与交点位置
+	int plane_index = WhichPlane(pt, intersect_point);
 
-	switch (plane)
+	int i = 0, j = 0;
+	switch (plane_index)
 	{
+		/*
+		 *  由正方体的内部向外看去，z 轴指向上面，与上面相交
+		 *  x 轴和 y 轴分别表示上面图像的行列索引，且上面起始坐标为 (-0.5, 0.5, 0.5)
+		 *  x的坐标范围为(-0.5,0.5), 对于x任意值 tmp_x, 其距离 x 的原点的距离为 0.5+tmp_x, 如 x_tmp = -0.2, 则distance = 0.5 +（-0.2）= 0.3
+		 *  y的坐标范围为(0.5,-0.5), 对于y任意值 tmp_y, 其距离 y 的原点的距离为 0.5-tmp_x, 如 x_tmp = -0.2, 则distance = 0.5 -（-0.2）= 0.7
+		 */
 	case UP:
-		i = (HALF_SIDE + Index(&intersect_point, 0))*M;
+		i = (HALF_SIDE + Index(&intersect_point, 0))*M;  // HALF_SIDE + Index(&intersect_point, 0) 为距离原点的比例，
+		                                                 // M为资源图像的高度
+		                                                 // 二者相乘，则可得该位置对应资源图像上像素的对应位置
 		j = (HALF_SIDE - Index(&intersect_point, 1))*N;
-		if (i >= M)i = M - 1;
+
+		if (i >= M)i = M - 1;                            // 防止索引越界
 		if (j >= N)j = N - 1;
-		return GPixel(&images[UP], i, j);
+
+		return GPixel(&images[UP], i, j);                // 根据图像映射位置，获取该位置的实际像素值
 		
 		break;
 
@@ -440,61 +470,51 @@ const Vector3d GetPixel(const GImage images[], Vector3d pt)
 //cv::Mat ViewGenerate(Vector3d U, Vector3d F, double alpha, double beta, int M, int N);
 
 __global__
-void ComputePixelValue(Point *A, Vector3d *U, float pix_dh, float pix_hw, Vector3d *VTQ, GImage images[], GImage *result)
+void ComputePixelValue(Point *A,Vector3d *U, float pix_dh, float pix_hw, const Vector3d *VTQ, const GImage images[], GImage *result)
 {
-	
 	int i = blockIdx.x*blockDim.x + threadIdx.x;
 	int j = blockIdx.y*blockDim.y + threadIdx.y;
 
 	if (i < result->rows && j < result->cols)
 	{
-		//Point Pij = Add(&Sub(&Add(&Sub(A, &VecMultifloat(&Normalized(U), pix_dh / 2)), &VecMultifloat(&Normalized(VTQ), pix_hw / 2)), &VecMultifloat(&Normalized(U), i * pix_dh)), &VecMultifloat(&Normalized(VTQ), j * pix_hw));
-		
+		// 像素坐标
 		Point Pij = (*A) - U->normalized()*pix_dh / 2.0   + VTQ->normalized()*pix_hw / 2.0   - U->normalized()*i * pix_dh + VTQ->normalized()*j * pix_hw;
-		//printf("row:%d col:%d ", i, j);
-		//Print(Pij);
+		
+		// 与平面相交的交点位置像素值
 		auto c = GetPixel(images, Pij);
+
+		// 设置像素值
 		SetGPixel(result, i, j, c);
-		//printf("block:%d  thread:%d\n", i, j);
 	}
 	
 }
 
 
 
-void ViewGenerate(const std::map<int, cv::Mat> &images_cpu, Vector3d U_cpu, Vector3d F_cpu, double alpha, double beta, int M, int N, cv::Mat &result_cpu)
+void GraphGenerate(const std::map<int, cv::Mat> &images_cpu, Vector3d U_cpu, Vector3d F_cpu, double alpha, double beta, int M, int N, cv::Mat &result_cpu)
 {
 	// 计算 T 点坐标
 	auto nor_F = Normalized(&F_cpu);
 	Point T = VecMultifloat(&nor_F, ET);
 	//cout << "T:" << endl << T << endl;
-	Print(T);
+	//Print(T);
 
 	// 垂直于平面ETU的法向量
 	auto VTQ = Cross(&F_cpu, &U_cpu);
-	Print(VTQ);
+	//Print(VTQ);
 
 	// 图像宽和高
-	float H = 2 * ET*std::tan(alpha);
-	float W = 2 * ET*std::tan(beta);
+	float H = 2 * ET*std::tan(alpha * PI / 180);
+	float W = 2 * ET*std::tan(beta * PI / 180);
 	float pix_dh = H / M;
 	float pix_hw = W / N;
 
 
 
 	// 计算A点坐标
-	//Point A = T - Normalized(&VTQ)*W / 2.0 + Normalized(&U)* H / 2 ;
-	
-	//
-	/*auto nor_vtq = Normalized(&VTQ);
-	auto nor_u = Normalized(&U_cpu);
-	auto v1 = VecMultifloat(&nor_vtq, W / 2.0);
-	auto v2 = VecMultifloat(&nor_u, H / 2.0);
-	Point A = Sub(&Sub(&T, &v1), &v2);*/
 	Point A = T - VTQ.normalized()*W / 2   + U_cpu.normalized()*H / 2  ;
-
-	Print(A);
-	//cout << "A:" << endl << A << endl;
+	//Print(A);
+	
 
 	// 申请GPU端数据
 	Point *A_GPU = 0;
@@ -533,8 +553,6 @@ void ViewGenerate(const std::map<int, cv::Mat> &images_cpu, Vector3d U_cpu, Vect
 	}
 	
 	
-
-    printf("ViewGenerate...\n");
 	GImage *result_gpu = 0;
 	cudaMallocManaged(&result_gpu, sizeof(GImage));
 	result_gpu->rows = M;
@@ -561,6 +579,19 @@ void ViewGenerate(const std::map<int, cv::Mat> &images_cpu, Vector3d U_cpu, Vect
 			result_cpu.at<cv::Vec3b>(i, j) = v;
 		}
 	}
+
+	// 释放内存
+	cudaFree(A_GPU);
+	cudaFree(U_GPU);
+	cudaFree(VTQ_GPU);
+
+	for (int i = 0; i < 6; i++)
+	{
+		cudaFree(images_gpu[i].data);
+	}
+	cudaFree(images_gpu);
+	cudaFree(result_gpu->data);
+	cudaFree(result_gpu);
 }
 
 
@@ -571,7 +602,6 @@ int main()
 	Vector3d F;
 	SetVector3d(&F, 1, 1, 0);
 
-	// 读取图片
 	// 读取图片
 	cv::Mat image_up = cv::imread("../data/up.jpg");
 	cv::Mat image_bottom = cv::imread("../data/bottom.jpg");
@@ -590,10 +620,13 @@ int main()
 	imgs[BACK] = image_back;
 
 	cv::Mat result;
-	ViewGenerate(imgs, U, F, 30 * PI / 180, 40 * PI / 180, 768, 1024, result);
+	/*
+	 *  参数三和参数四角度的单位 为 度(°)，而非弧度
+	 */
+	GraphGenerate(imgs, U, F, 30 , 40 , 768, 1024, result);
 	cudaDeviceSynchronize();
 
-	cv::imshow("ok", result);
+	cv::imshow("result", result);
 	cv::waitKey();
 	
 
