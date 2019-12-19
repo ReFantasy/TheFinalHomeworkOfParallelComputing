@@ -8,21 +8,13 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 #字符集
 Add_Definitions(-DUNICODE -D_UNICODE)
 
-
 # C++版本
 SET(CMAKE_CXX_FLAGS "-std=c++11")
 
 # 配置 OpenCV 库
-
 FIND_PACKAGE( OpenCV REQUIRED )
 INCLUDE_DIRECTORIES( ${OpenCV_INCLUDE_DIRS} )
 LINK_LIBRARIES( ${OpenCV_LIBS} )
-
-
-# 配置 第三方包含目录
-#include_directories(./3rdparty)
-
-
 
 # 编译版本
 SET(CMAKE_BUILD_TYPE "Release")
