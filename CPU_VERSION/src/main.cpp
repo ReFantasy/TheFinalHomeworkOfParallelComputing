@@ -66,8 +66,6 @@ int main()
 	// show results
 	cv::imshow("result", img);
 	cv::waitKey();
-	
-
 
 #ifdef _WIN32
 	system("pause");
