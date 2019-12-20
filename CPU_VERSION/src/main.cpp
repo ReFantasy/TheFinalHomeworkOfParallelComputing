@@ -63,7 +63,6 @@ int main()
 
 	std::cout << "consumed time : " << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() << " ms" << std::endl;
 
-
 	// show results
 	cv::imshow("result", img);
 	cv::waitKey();
