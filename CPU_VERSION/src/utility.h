@@ -51,8 +51,6 @@ public:
 		return Vector3d(b1*c2 - b2 * c1, a2*c1 - a1 * c2, a1*b2 - a2 * b1);
 	}
 	
-
-
 	float operator()(int i)
 	{
 		if (i == 0)
